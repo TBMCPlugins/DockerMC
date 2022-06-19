@@ -1,0 +1,6 @@
+services:
+  runner:
+    build:
+      context: ..
+      dockerfile: .docker/runner/Dockerfile
+    image: dockermc
