@@ -1,0 +1,37 @@
+services:
+  server1:
+    build:
+      context: ..
+      dockerfile: .docker/server/Dockerfile
+    volumes:
+      - dockermc:/mcserver
+    environment:
+      - MC_SERVER=server1
+    image: dockermc-server
+    networks:
+      default:
+        aliases:
+          - server1
+    container_name: mc-server1
+  server2:
+    build:
+      context: ..
+      dockerfile: .docker/server/Dockerfile
+    volumes:
+      - dockermc:/mcserver
+    environment:
+      - MC_SERVER=server2
+    image: dockermc-server
+    networks:
+      default:
+        aliases:
+          - server2
+    container_name: mc-server2
+volumes:
+  dockermc:
+    name: dockermc
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ../mcserver

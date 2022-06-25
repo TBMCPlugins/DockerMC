@@ -4,13 +4,23 @@ services:
       context: ..
       dockerfile: .docker/runner/Dockerfile
       target: dev
+      args:
+        - DGID=${DGID}
     image: dockermc
     environment:
       - MC_VERSION=1.19
+      - DGID=${DGID}
     volumes:
       - ../src:/src
-  server1:
-    build:
-      context: ..
-      dockerfile: .docker/server/Dockerfile
-    image: dockermc-server
+      - dockermc:/mcserver
+      - ./docker-compose.server.yml:/docker-compose.server.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+    container_name: dockermc-runner
+volumes:
+  dockermc:
+    name: dockermc
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ../mcserver
