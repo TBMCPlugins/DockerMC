@@ -1,5 +1,13 @@
-FROM eclipse-temurin:17-jre-focal
+FROM node:16 AS dev
 
-COPY target/DockerMC*.jar DockerMC.jar
+WORKDIR src
 
-ENTRYPOINT ["java", "-jar", "DockerMC.jar"]
+ENTRYPOINT ["npm", "run", "start:watch"]
+
+FROM dev AS prod
+
+COPY src .
+
+RUN npm rebuild
+
+ENTRYPOINT ["npm", "start"]

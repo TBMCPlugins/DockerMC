@@ -3,4 +3,14 @@ services:
     build:
       context: ..
       dockerfile: .docker/runner/Dockerfile
+      target: dev
     image: dockermc
+    environment:
+      - MC_VERSION=1.19
+    volumes:
+      - ../src:/src
+  server1:
+    build:
+      context: ..
+      dockerfile: .docker/server/Dockerfile
+    image: dockermc-server
