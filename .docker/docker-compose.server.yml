@@ -9,7 +9,7 @@ services:
       - MC_SERVER=server1
     image: dockermc-server
     networks:
-      default:
+      dockermc:
         aliases:
           - server1
     container_name: mc-server1
@@ -23,15 +23,15 @@ services:
       - MC_SERVER=server2
     image: dockermc-server
     networks:
-      default:
+      dockermc:
         aliases:
           - server2
     container_name: mc-server2
 volumes:
   dockermc:
     name: dockermc
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ../mcserver
+    external: true # Created by the outer Compose file
+networks:
+  dockermc:
+    name: dockermc
+    driver: bridge

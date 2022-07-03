@@ -18,6 +18,8 @@ RUN apt-get update
 RUN apt-get install -y docker-ce docker-ce-cli containerd.io
 # Install Docker Compose
 RUN apt-get install -y docker-compose-plugin
+# Install wait-for-it
+RUN apt-get install -y wait-for-it
 # Add user to Docker group so Docker commands can be used
 RUN groupadd -g $DGID hostDocker || :
 RUN usermod -aG $DGID node

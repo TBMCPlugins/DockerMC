@@ -16,6 +16,10 @@ services:
       - ./docker-compose.server.yml:/docker-compose.server.yml
       - /var/run/docker.sock:/var/run/docker.sock
     container_name: dockermc-runner
+    networks:
+      dockermc:
+        aliases:
+          - runner
 volumes:
   dockermc:
     name: dockermc
@@ -23,4 +27,8 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: ../mcserver
+      device: $PWD/mcserver
+networks:
+  dockermc:
+    name: dockermc
+    driver: bridge

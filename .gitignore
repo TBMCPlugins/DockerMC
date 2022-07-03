@@ -1,3 +1,4 @@
 /src/dist/
 .idea
 node_modules
+.docker/mcserver
