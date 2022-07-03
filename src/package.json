@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "chokidar": "^3.5.3",
+    "debounce": "^1.2.1",
     "node-fetch": "^3.2.6",
     "read-last-lines": "^1.8.0"
   }

@@ -4,4 +4,4 @@ COPY .docker/server/start.sh ./
 
 WORKDIR /mcserver
 
-ENTRYPOINT ["sh", "/start.sh"]
+ENTRYPOINT ["bash", "/start.sh"]

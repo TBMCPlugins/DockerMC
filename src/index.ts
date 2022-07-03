@@ -1,14 +1,20 @@
 import fetch from 'node-fetch';
 import { promises } from 'fs';
-import { ChildProcess, exec, ExecException } from 'child_process';
+import { exec, ExecException } from 'child_process';
 import * as chokidar from 'chokidar';
+import debounce from 'debounce';
 
 const running: {
-    process: ChildProcess,
+    watch: chokidar.FSWatcher,
     server1: boolean,
     serverName: () => string,
     prevServerName: () => string
-} = {process: null, server1: false, serverName: () => 'server' + (running.server1 ? '1' : '2'), prevServerName: () => 'server' + (running.server1 ? '2' : '1')};
+} = {
+    watch: null,
+    server1: false,
+    serverName: () => 'server' + (running.server1 ? '1' : '2'),
+    prevServerName: () => 'server' + (running.server1 ? '2' : '1')
+};
 
 async function main() {
     console.log("Checking for server updates...", "MC", process.env.MC_VERSION);
@@ -28,24 +34,28 @@ async function main() {
             console.log("Build downloaded", lastBuild.downloads.application.name);
         }
     }
-    await startNextServer();
-    chokidar.watch(`/mcserver/${running.serverName()}/plugins/*.jar`).on('change', async () => { // TODO: Separate plugins dir
-        console.log("Plugin changes detected, restarting");
+    const listener = async (changedPath) => {
+        console.log(`Plugin change detected at ${changedPath}, switching to ${running.prevServerName()}`);
         await startNextServer();
-    });
+    };
+    running.watch = chokidar.watch(`/mcserver/plugins/*.jar`).on('change', debounce(listener, 500));
+    await startNextServer();
 }
 
 async function startNextServer() {
     running.server1 = !running.server1;
+    console.log("Copying plugin files to", running.serverName());
+    await promises.cp('/mcserver/plugins', `/mcserver/${running.serverName()}/plugins`, {recursive: true}); // TODO: Don't run servers as root
+    // TODO: Copy config files back to main plugins dir
     console.log("Starting server", running.server1 ? 'one' : 'two');
-    exec('docker compose -f /docker-compose.server.yml up -d '+running.serverName(), loggingCallback);
+    exec('docker compose -f /docker-compose.server.yml up -d ' + running.serverName(), loggingCallback);
     await waitForStartup();
     await stopPrevServer();
 }
 
 async function stopPrevServer() {
     console.log("Stopping previous server");
-    exec('docker compose -f /docker-compose.server.yml stop '+running.prevServerName(), loggingCallback);
+    exec('docker compose -f /docker-compose.server.yml stop ' + running.prevServerName(), loggingCallback);
 }
 
 function waitForStartup() {
