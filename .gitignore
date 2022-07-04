@@ -1,4 +1,7 @@
 /src/dist/
 .idea
 node_modules
-.docker/mcserver
+.docker/mcserver/proxy
+.docker/mcserver/server*
+.docker/mcserver/*.jar
+.docker/mcserver/plugins

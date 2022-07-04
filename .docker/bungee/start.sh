@@ -1,11 +1,8 @@
-#for file in *.jar; do
-#  echo $file
-#done
 trap "echo Received stop signal; pkill java" INT TERM EXIT
 ls -la
-file=$(ls paper*.jar | tail -1)
+file=$(ls waterfall*.jar | tail -1)
 echo Starting $file
-mkdir -p $MC_SERVER
-cd $MC_SERVER
+mkdir -p proxy
+cd proxy
 java -jar ../$file
 echo Stopped!

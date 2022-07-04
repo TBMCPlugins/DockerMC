@@ -27,6 +27,20 @@ services:
         aliases:
           - server2
     container_name: mc-server2
+  bungee:
+    build:
+      context: ..
+      dockerfile: .docker/bungee/Dockerfile
+    image: bungee
+    container_name: dockermc-bungee
+    networks:
+      dockermc:
+        aliases:
+          - bungee
+    volumes:
+      - dockermc:/mcserver
+    ports:
+      - 25565:25577
 volumes:
   dockermc:
     name: dockermc
