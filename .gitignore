@@ -5,3 +5,5 @@ node_modules
 .docker/mcserver/server*
 .docker/mcserver/*.jar
 .docker/mcserver/plugins
+.docker/.flatpak-builder
+.docker/build

@@ -1,0 +1,22 @@
+app-id: io.github.TBMCPlugins.FlatMC
+runtime: org.freedesktop.Sdk # Has to be SDK instead of Platform because we need the NodeJS SDK extension
+runtime-version: '21.08'
+sdk: org.freedesktop.Sdk
+command: start.sh
+modules:
+  - name: HelloTeszt
+    buildsystem: simple
+    build-commands:
+     - npm install --offline
+     - npm run build
+     - install -d dist /app/bin/dist
+     - install -D start.sh /app/bin/start.sh
+    sources:
+     - type: dir
+       path: ../src
+     - type: file
+       path: runner/start.sh
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.node16
+build-options:
+  append-path: /usr/lib/sdk/node16/bin
