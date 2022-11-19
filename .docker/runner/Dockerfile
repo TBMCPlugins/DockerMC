@@ -25,7 +25,7 @@ RUN groupadd -g $DGID hostDocker || :
 RUN usermod -aG $DGID node
 USER node
 
-ENTRYPOINT ["npm", "run", "start:watch"]
+ENTRYPOINT ["node_modules/.bin/tsc-watch", "--target", "es2017", "--outDir", "./dist", "--onSuccess", "node -r source-map-support/register .", "--noClear"]
 
 FROM dev AS prod
 

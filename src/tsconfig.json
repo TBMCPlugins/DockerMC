@@ -2,7 +2,8 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": ".",
-    "moduleResolution": "Node"
+    "moduleResolution": "Node",
+    "allowSyntheticDefaultImports": true
   },
-  "include": ["."],
+  "include": ["."]
 }

@@ -15,7 +15,7 @@ listeners:
   host: 0.0.0.0:25577
   max_players: 1
   tab_size: 60
-  force_default_server: false
+  force_default_server: true
 remote_ping_cache: -1
 network_compression_threshold: 256
 permissions:

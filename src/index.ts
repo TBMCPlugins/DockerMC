@@ -7,38 +7,58 @@ import debounce from 'debounce';
 const running: {
     watch: chokidar.FSWatcher,
     server1: boolean,
-    serverName: () => string,
-    prevServerName: () => string
+    serverName: () => 'server1' | 'server2',
+    prevServerName: () => 'server1' | 'server2'
 } = {
     watch: null,
     server1: false,
-    serverName: () => 'server' + (running.server1 ? '1' : '2'),
-    prevServerName: () => 'server' + (running.server1 ? '2' : '1')
+    serverName: () => (running.server1 ? 'server1' : 'server2'),
+    prevServerName: () => (running.server1 ? 'server2' : 'server1')
 };
+
+let isShuttingDown = false;
 
 async function main() {
     console.log("Checking for server updates...", "MC", process.env.MC_VERSION);
     await updateServer('paper');
     await updateServer('waterfall');
     console.log('Starting server proxy...');
-    exec('docker compose -f /docker-compose.server.yml up -d bungee', loggingCallback);
+    execCompose('bungee', 'up');
     const listener = async (changedPath) => {
         console.log(`Plugin change detected at ${changedPath}, switching to ${running.prevServerName()}...`);
         await startNextServer();
     };
     running.watch = chokidar.watch(`/mcserver/plugins/*.jar`).on('change', debounce(listener, 500));
     await startNextServer();
+    process.on('SIGTERM', () => shutdown());
+    process.on('SIGINT', () => shutdown());
+}
+
+async function shutdown() {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    console.log("Shutting down...");
+    await running.watch?.close();
+    await new Promise<void>(resolve => execCompose(running.serverName(), 'stop').on('exit', () => resolve()));
+    await new Promise<void>(resolve => execCompose('bungee', 'stop').on('exit', () => resolve()));
+    console.log("Shutdown complete");
+    process.exit();
 }
 
 async function updateServer(project: 'paper' | 'waterfall') {
-    const res: { builds: Build[] } = await (await fetch(`https://api.papermc.io/v2/projects/${project}/versions/${process.env.MC_VERSION}/builds`)).json() as any;
+    let mcver = process.env.MC_VERSION;
+    mcver = project === 'waterfall' ? mcver.split('.').slice(0, 2).join('.') : mcver;
+    const res: { builds?: Build[] } = await (await fetch(`https://api.papermc.io/v2/projects/${project}/versions/${mcver}/builds`)).json() as any;
+    if (!res.builds) {
+        throw new Error(`No builds found for MC version ${mcver}`);
+    }
     const lastBuild = res.builds[res.builds.length - 1];
-    console.log(`Latest ${project} build is ${lastBuild.build} at ${new Date(Date.parse(lastBuild.time)).toLocaleString()}`);
+    console.log(`Latest ${project} build is ${lastBuild.build} at ${new Date(Date.parse(lastBuild.time)).toLocaleString()}`); // TODO: Delete all old builds
     try {
         await promises.access('/mcserver/' + lastBuild.downloads.application.name)
     } catch {
         console.log("Build not found locally, downloading...");
-        const newVerRes = await fetch(`https://api.papermc.io/v2/projects/${project}/versions/${process.env.MC_VERSION}/builds/${lastBuild.build}/downloads/${lastBuild.downloads.application.name}`);
+        const newVerRes = await fetch(`https://api.papermc.io/v2/projects/${project}/versions/${mcver}/builds/${lastBuild.build}/downloads/${lastBuild.downloads.application.name}`);
         if (newVerRes.status > 299) {
             console.log("Error while downloading", await newVerRes.json());
             throw new Error("Error while downloading");
@@ -57,14 +77,15 @@ async function startNextServer() {
     console.log('Copying config files...');
     await promises.cp('/mcserver/configs', `/mcserver/${running.serverName()}`, {recursive: true});
     console.log("Starting server", running.server1 ? 'one...' : 'two...');
-    exec('docker compose -f /docker-compose.server.yml up -d ' + running.serverName(), loggingCallback);
+    execCompose(running.serverName(), 'up');
     await waitForStartup();
     await stopPrevServer();
+    console.log("Server", running.server1 ? 'one' : 'two', "reachable at localhost:25565");
 }
 
 async function stopPrevServer() {
     console.log("Stopping previous server...");
-    exec('docker compose -f /docker-compose.server.yml stop ' + running.prevServerName(), loggingCallback);
+    execCompose(running.prevServerName(), 'stop');
 }
 
 function waitForStartup() {
@@ -88,10 +109,17 @@ function loggingCallback(error?: ExecException, stdout?: string, stderr?: string
     if (stderr) {
         console.error(stderr);
     }
-    if (error) {
+    if (error && error.signal !== 'SIGTERM') { // docker compose stop results in SIGTERM if not running I guess
         console.error(error);
     }
 }
+
+function execCompose(container: 'bungee' | 'server1' | 'server2', command: 'up' | 'stop') {
+    return exec(`docker compose -f /docker-compose.server.yml ${command}${command === 'up' ? ' -d' : ''} ${container}`, loggingCallback);
+}
+
+// Begin reading from stdin so the process does not exit.
+process.stdin.resume();
 
 main().catch(reason => console.error('An error occurred while running DockerMC.', reason));
 
